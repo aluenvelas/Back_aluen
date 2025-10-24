@@ -14,6 +14,7 @@ router.get('/', async (req, res) => {
       fechaFin, 
       cliente, 
       metodoPago,
+      puntoVenta,
       page = 1,
       limit = 50
     } = req.query;
@@ -22,7 +23,13 @@ router.get('/', async (req, res) => {
     
     if (estado) query.estado = estado;
     if (metodoPago) query.metodoPago = metodoPago;
-    if (cliente) query['cliente.nombre'] = new RegExp(cliente, 'i');
+    if (cliente) {
+      query.$or = [
+        { 'cliente.nombre': new RegExp(cliente, 'i') },
+        { 'cliente.email': new RegExp(cliente, 'i') }
+      ];
+    }
+    if (puntoVenta) query.puntoVenta = puntoVenta;
     
     if (fechaInicio || fechaFin) {
       query.fecha = {};
