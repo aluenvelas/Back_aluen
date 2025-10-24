@@ -1,0 +1,149 @@
+===========================================
+CÓDIGO PARA FRONT_ALUEN - ELIMINAR INVENTARIO
+===========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. ACTUALIZAR: src/services/api.js
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Buscar el objeto inventarioAPI y agregar el método delete:
+
+export const inventarioAPI = {
+  getAll: (params = {}) => api.get('/inventario', { params }),
+  getById: (id) => api.get(`/inventario/${id}`),
+  update: (id, data) => api.put(`/inventario/${id}`, data),
+  delete: (id) => api.delete(`/inventario/${id}`),  // 👈 AGREGAR ESTA LÍNEA
+  getBajoStock: () => api.get('/inventario/alerta/bajo-stock'),
+};
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. ACTUALIZAR: src/pages/Inventario.js
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+A. En la sección de imports, asegurarse que Modal esté incluido:
+   
+   import { Container, Row, Col, Card, Table, Badge, Alert, Spinner, Button, Form, Modal } from 'react-bootstrap';
+
+
+B. Agregar estos estados después de los estados existentes (cerca de la línea 20):
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemAEliminar, setItemAEliminar] = useState(null);
+
+
+C. Agregar estas funciones después de handleAjustarStock:
+
+  const handleOpenDeleteModal = (item) => {
+    if (item.stockActual > 0) {
+      alert('⚠️ No se puede eliminar un producto con stock disponible.\n\nPrimero ajusta el stock a 0.');
+      return;
+    }
+    setItemAEliminar(item);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemAEliminar) return;
+
+    try {
+      const response = await inventarioAPI.delete(itemAEliminar._id);
+      alert(`✅ ${response.data.mensaje}\n\nProducto: ${response.data.nombreVela}\nCódigo: ${response.data.codigo}`);
+      setShowDeleteModal(false);
+      setItemAEliminar(null);
+      fetchInventario(); // Recargar el inventario
+    } catch (err) {
+      console.error('Error al eliminar:', err);
+      alert('❌ Error: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const handleCloseDeleteModal = () => {
+    setShowDeleteModal(false);
+    setItemAEliminar(null);
+  };
+
+
+D. En la tabla, en la columna "Stock Actual", DESPUÉS del botón de ajustar (✏️), agregar:
+
+                            {usuario?.rol === 'admin' && item.stockActual === 0 && (
+                              <Button
+                                size="sm"
+                                variant="outline-danger"
+                                onClick={() => handleOpenDeleteModal(item)}
+                                title="Eliminar del inventario"
+                                style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
+                              >
+                                🗑️
+                              </Button>
+                            )}
+
+
+E. Al final del componente, ANTES del cierre de </Container>, DESPUÉS del Modal de ajuste, agregar:
+
+      {/* Modal de Confirmación de Eliminación */}
+      <Modal show={showDeleteModal} onHide={handleCloseDeleteModal} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>⚠️ Confirmar Eliminación</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {itemAEliminar && (
+            <>
+              <Alert variant="warning">
+                <strong>¿Estás seguro que deseas eliminar este producto del inventario?</strong>
+              </Alert>
+              <div className="mb-3">
+                <p><strong>Código:</strong> {itemAEliminar.receta?.codigo || 'N/A'}</p>
+                <p><strong>Nombre:</strong> {itemAEliminar.nombreVela}</p>
+                <p><strong>Stock actual:</strong> {itemAEliminar.stockActual} unidades</p>
+              </div>
+              <Alert variant="info">
+                <small>
+                  ℹ️ Esta acción eliminará el registro del inventario. Si produces esta vela nuevamente, 
+                  se creará un nuevo registro.
+                </small>
+              </Alert>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseDeleteModal}>
+            Cancelar
+          </Button>
+          <Button variant="danger" onClick={handleConfirmDelete}>
+            🗑️ Sí, Eliminar
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+===========================================
+BACKEND YA ACTUALIZADO ✅
+===========================================
+
+El endpoint DELETE /api/inventario/:id ya está implementado con:
+
+✅ Validación de stock = 0
+✅ Eliminación del registro
+✅ Logs en consola
+✅ Respuesta con confirmación
+
+===========================================
+INSTRUCCIONES DE IMPLEMENTACIÓN
+===========================================
+
+1. Aplicar los cambios en el código del frontend
+2. Hacer commit y push a GitHub
+3. Netlify desplegará automáticamente
+4. Render ya tiene el backend actualizado
+
+===========================================
+FUNCIONALIDAD FINAL
+===========================================
+
+✅ Solo admin puede ver el botón de eliminar
+✅ Botón 🗑️ solo aparece cuando stock = 0
+✅ Modal de confirmación antes de eliminar
+✅ Validación backend para seguridad
+✅ Mensaje de confirmación al usuario
+✅ Recarga automática del inventario
+
+
